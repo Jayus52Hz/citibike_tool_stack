@@ -1,0 +1,438 @@
+name: citibike_tool_stack
+
+networks:
+  bigdata_net:
+    driver: bridge
+
+volumes:
+  hadoop_namenode:
+  hadoop_datanode:
+  hadoop_history:
+  mysql_data:
+  kafka_data:
+  airflow_postgres_data:
+  airflow_logs:
+  superset_home:
+  minio_data:
+
+services:
+  namenode:
+    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    container_name: citibike-namenode
+    hostname: namenode
+    environment:
+      CLUSTER_NAME: ${HADOOP_CLUSTER_NAME}
+      CORE_CONF_fs_defaultFS: hdfs://namenode:9000
+      HDFS_CONF_dfs_replication: 1
+      HDFS_CONF_dfs_permissions_enabled: "false"
+      HDFS_CONF_dfs_namenode_datanode_registration_ip___hostname___check: "false"
+    ports:
+      - "9870:9870"
+      - "9000:9000"
+    volumes:
+      - hadoop_namenode:/hadoop/dfs/name
+    networks:
+      - bigdata_net
+
+  datanode:
+    image: bde2020/hadoop-datanode:2.0.0-hadoop3.2.1-java8
+    container_name: citibike-datanode
+    hostname: datanode
+    environment:
+      SERVICE_PRECONDITION: namenode:9870
+      CORE_CONF_fs_defaultFS: hdfs://namenode:9000
+      HDFS_CONF_dfs_replication: 1
+      HDFS_CONF_dfs_permissions_enabled: "false"
+    ports:
+      - "9864:9864"
+    volumes:
+      - hadoop_datanode:/hadoop/dfs/data
+    depends_on:
+      - namenode
+    networks:
+      - bigdata_net
+
+  resourcemanager:
+    image: bde2020/hadoop-resourcemanager:2.0.0-hadoop3.2.1-java8
+    container_name: citibike-resourcemanager
+    hostname: resourcemanager
+    environment:
+      SERVICE_PRECONDITION: namenode:9000 datanode:9864
+      CORE_CONF_fs_defaultFS: hdfs://namenode:9000
+      YARN_CONF_yarn_resourcemanager_hostname: resourcemanager
+      YARN_CONF_yarn_nodemanager_aux___services: mapreduce_shuffle
+      MAPRED_CONF_mapreduce_framework_name: yarn
+      MAPRED_CONF_mapreduce_jobhistory_address: historyserver:10020
+      MAPRED_CONF_mapreduce_jobhistory_webapp_address: historyserver:19888
+    ports:
+      - "8088:8088"
+    depends_on:
+      - namenode
+      - datanode
+    networks:
+      - bigdata_net
+
+  nodemanager:
+    image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+    container_name: citibike-nodemanager
+    hostname: nodemanager
+    environment:
+      SERVICE_PRECONDITION: namenode:9000 datanode:9864 resourcemanager:8088
+      CORE_CONF_fs_defaultFS: hdfs://namenode:9000
+      YARN_CONF_yarn_resourcemanager_hostname: resourcemanager
+      YARN_CONF_yarn_nodemanager_aux___services: mapreduce_shuffle
+      MAPRED_CONF_mapreduce_framework_name: yarn
+    ports:
+      - "8042:8042"
+    depends_on:
+      - resourcemanager
+    networks:
+      - bigdata_net
+
+  historyserver:
+    image: bde2020/hadoop-historyserver:2.0.0-hadoop3.2.1-java8
+    container_name: citibike-historyserver
+    hostname: historyserver
+    environment:
+      SERVICE_PRECONDITION: namenode:9000 datanode:9864 resourcemanager:8088
+      CORE_CONF_fs_defaultFS: hdfs://namenode:9000
+      MAPRED_CONF_mapreduce_jobhistory_address: historyserver:10020
+      MAPRED_CONF_mapreduce_jobhistory_webapp_address: historyserver:19888
+    ports:
+      - "19888:19888"
+    volumes:
+      - hadoop_history:/hadoop/yarn/timeline
+    depends_on:
+      - resourcemanager
+    networks:
+      - bigdata_net
+
+  spark-master:
+    image: apache/spark:3.5.1
+    container_name: citibike-spark-master
+    hostname: spark-master
+    user: root
+    environment:
+      HADOOP_USER_NAME: root
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.master.Master", "--host", "spark-master"]
+    ports:
+      - "7077:7077"
+      - "8091:8080"
+    volumes:
+      - ./spark/apps:/opt/spark/work:ro
+    depends_on:
+      - namenode
+      - datanode
+    networks:
+      - bigdata_net
+
+  spark-worker:
+    image: apache/spark:3.5.1
+    container_name: citibike-spark-worker
+    hostname: spark-worker
+    user: root
+    environment:
+      SPARK_WORKER_MEMORY: 1G
+      SPARK_WORKER_CORES: 1
+      HADOOP_USER_NAME: root
+    command: ["/opt/spark/bin/spark-class", "org.apache.spark.deploy.worker.Worker", "spark://spark-master:7077"]
+    ports:
+      - "8092:8081"
+    depends_on:
+      - spark-master
+    networks:
+      - bigdata_net
+
+  mysql:
+    image: mysql:8.0
+    container_name: citibike-mysql
+    hostname: mysql
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "3306:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./mysql/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$${MYSQL_ROOT_PASSWORD} --silent"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks:
+      - bigdata_net
+
+  sqoop:
+    build:
+      context: ./docker/sqoop
+    container_name: citibike-sqoop
+    hostname: sqoop
+    environment:
+      HADOOP_USER_NAME: root
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ./hadoop-conf/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
+      - ./hadoop-conf/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
+      - ./hadoop-conf/mapred-site.xml:/opt/hadoop/etc/hadoop/mapred-site.xml:ro
+      - ./hadoop-conf/yarn-site.xml:/opt/hadoop/etc/hadoop/yarn-site.xml:ro
+      - ./data:/sample-data:ro
+    command: ["bash", "-lc", "tail -f /dev/null"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+      namenode:
+        condition: service_started
+      datanode:
+        condition: service_started
+    networks:
+      - bigdata_net
+
+  drill:
+    image: apache/drill:1.21.1
+    container_name: citibike-drill
+    hostname: drill
+    entrypoint: ["/bin/bash", "-lc"]
+    command: ["/opt/drill/bin/drillbit.sh run"]
+    ports:
+      - "8047:8047"
+    volumes:
+      - ./data:/sample-data:ro
+      - ./docker/drill/drill-override.conf:/opt/drill/conf/drill-override.conf:ro
+    depends_on:
+      - zookeeper
+    networks:
+      - bigdata_net
+
+  zookeeper:
+    image: zookeeper:3.9.2
+    container_name: citibike-zookeeper
+    hostname: zookeeper
+    environment:
+      ZOO_4LW_COMMANDS_WHITELIST: ruok,stat,mntr
+    ports:
+      - "2181:2181"
+    networks:
+      - bigdata_net
+
+  kafka:
+    image: apache/kafka:3.7.0
+    container_name: citibike-kafka
+    hostname: kafka
+    environment:
+      CLUSTER_ID: 4L6g3nShT-eMCtK--X86sw
+      KAFKA_NODE_ID: 1
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@kafka:9093
+      KAFKA_LISTENERS: PLAINTEXT://:9092,CONTROLLER://:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_LOG_DIRS: /var/lib/kafka/data
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 1
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0
+      KAFKA_NUM_PARTITIONS: 1
+    ports:
+      - "9092:9092"
+    volumes:
+      - kafka_data:/var/lib/kafka/data
+    networks:
+      - bigdata_net
+
+  airflow-postgres:
+    image: postgres:15
+    container_name: citibike-airflow-postgres
+    hostname: airflow-postgres
+    environment:
+      POSTGRES_USER: airflow
+      POSTGRES_PASSWORD: airflow
+      POSTGRES_DB: airflow
+    volumes:
+      - airflow_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U airflow -d airflow"]
+      interval: 10s
+      timeout: 5s
+      retries: 20
+    networks:
+      - bigdata_net
+
+  airflow-init:
+    image: apache/airflow:2.9.3
+    container_name: citibike-airflow-init
+    hostname: airflow-init
+    user: "${AIRFLOW_UID}:0"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - airflow_logs:/opt/airflow/logs
+    command:
+      - bash
+      - -lc
+      - >
+        airflow db migrate &&
+        (airflow users create
+        --username ${AIRFLOW_ADMIN_USER}
+        --password ${AIRFLOW_ADMIN_PASSWORD}
+        --firstname Admin
+        --lastname User
+        --role Admin
+        --email ${AIRFLOW_ADMIN_EMAIL}
+        || true)
+    depends_on:
+      airflow-postgres:
+        condition: service_healthy
+    networks:
+      - bigdata_net
+
+  airflow-webserver:
+    image: apache/airflow:2.9.3
+    container_name: citibike-airflow-webserver
+    hostname: airflow-webserver
+    user: "${AIRFLOW_UID}:0"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
+    command: webserver
+    ports:
+      - "8082:8080"
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - airflow_logs:/opt/airflow/logs
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    networks:
+      - bigdata_net
+
+  airflow-scheduler:
+    image: apache/airflow:2.9.3
+    container_name: citibike-airflow-scheduler
+    hostname: airflow-scheduler
+    user: "${AIRFLOW_UID}:0"
+    environment:
+      AIRFLOW__CORE__EXECUTOR: LocalExecutor
+      AIRFLOW__DATABASE__SQL_ALCHEMY_CONN: postgresql+psycopg2://airflow:airflow@airflow-postgres:5432/airflow
+      AIRFLOW__CORE__LOAD_EXAMPLES: "false"
+      AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
+      AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
+    command: scheduler
+    volumes:
+      - ./airflow/dags:/opt/airflow/dags:ro
+      - airflow_logs:/opt/airflow/logs
+    depends_on:
+      airflow-init:
+        condition: service_completed_successfully
+    networks:
+      - bigdata_net
+
+  superset-init:
+    build:
+      context: ./docker/superset
+    container_name: citibike-superset-init
+    hostname: superset-init
+    environment:
+      SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
+    volumes:
+      - superset_home:/app/superset_home
+      - ./docker/superset/superset_config.py:/app/pythonpath/superset_config.py:ro
+    command:
+      - bash
+      - -lc
+      - >
+        superset db upgrade &&
+        (superset fab create-admin
+        --username ${SUPERSET_ADMIN_USER}
+        --password ${SUPERSET_ADMIN_PASSWORD}
+        --firstname Admin
+        --lastname User
+        --email ${SUPERSET_ADMIN_EMAIL}
+        || true) &&
+        superset init &&
+        superset set-database-uri
+        -d "MySQL testdb"
+        -u "mysql+pymysql://${MYSQL_USER}:${MYSQL_PASSWORD}@mysql:3306/${MYSQL_DATABASE}"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - bigdata_net
+
+  superset:
+    build:
+      context: ./docker/superset
+    container_name: citibike-superset
+    hostname: superset
+    environment:
+      SUPERSET_CONFIG_PATH: /app/pythonpath/superset_config.py
+      SUPERSET_SECRET_KEY: ${SUPERSET_SECRET_KEY}
+    ports:
+      - "8089:8088"
+    volumes:
+      - superset_home:/app/superset_home
+      - ./docker/superset/superset_config.py:/app/pythonpath/superset_config.py:ro
+    command: ["bash", "-lc", "superset run -h 0.0.0.0 -p 8088 --with-threads"]
+    depends_on:
+      superset-init:
+        condition: service_completed_successfully
+      mysql:
+        condition: service_healthy
+    networks:
+      - bigdata_net
+
+  minio:
+    image: minio/minio:RELEASE.2024-07-16T23-46-41Z
+    container_name: citibike-minio
+    hostname: minio
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
+    command: ["server", "/data", "--console-address", ":9001"]
+    ports:
+      - "9002:9000"
+      - "9003:9001"
+    volumes:
+      - minio_data:/data
+    networks:
+      - bigdata_net
+
+  minio-init:
+    image: minio/mc:RELEASE.2024-07-15T17-46-06Z
+    container_name: citibike-minio-init
+    hostname: minio-init
+    entrypoint: ["/bin/sh", "-lc"]
+    command: >
+      'until mc alias set local http://minio:9000 ${MINIO_ROOT_USER} ${MINIO_ROOT_PASSWORD}; do sleep 2; done;
+      { echo "id,name,value"; echo "1,test,100"; } > /tmp/test.csv;
+      mc mb --ignore-existing local/${MINIO_TEST_BUCKET};
+      mc cp /tmp/test.csv local/${MINIO_TEST_BUCKET}/test.csv;
+      mc ls local/${MINIO_TEST_BUCKET}'
+    depends_on:
+      - minio
+    networks:
+      - bigdata_net
+
+  minio-client:
+    image: minio/mc:RELEASE.2024-07-15T17-46-06Z
+    hostname: minio-client
+    profiles:
+      - tools
+    entrypoint: ["/bin/sh", "-lc"]
+    networks:
+      - bigdata_net
