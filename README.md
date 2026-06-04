@@ -30,7 +30,7 @@ Sau khi container len, doi them 1-3 phut truoc khi chay smoke test vi Hadoop, Dr
 | Hadoop HistoryServer UI | http://localhost:19888 | none |
 | Spark Master UI | http://localhost:8091 | none |
 | Spark Worker UI | http://localhost:8092 | none |
-| MySQL | localhost:3306 | `testuser` / `testpass` |
+| MySQL | localhost:3307 | `testuser` / `testpass` |
 | Drill UI | http://localhost:8047 | none |
 | ZooKeeper | localhost:2181 | internal/Drill coordination |
 | Kafka | localhost:9092 exposed, tests use internal `kafka:9092` | none |

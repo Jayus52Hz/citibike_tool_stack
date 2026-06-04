@@ -10,6 +10,7 @@ sleep 3
 echo "hello-bigdata" | /opt/kafka/bin/kafka-console-producer.sh --bootstrap-server kafka:9092 --topic tool-stack-test
 /opt/kafka/bin/kafka-console-consumer.sh --bootstrap-server kafka:9092 --topic tool-stack-test --from-beginning --max-messages 1 --timeout-ms 10000
 '@
+$cmd = $cmd -replace "`r`n", "`n"
 
 docker @Compose exec -T kafka bash -lc $cmd
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

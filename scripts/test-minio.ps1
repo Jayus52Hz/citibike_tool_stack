@@ -10,6 +10,7 @@ mc cp /tmp/test.csv local/test-bucket/test.csv
 mc ls local/test-bucket
 mc cat local/test-bucket/test.csv
 '@
+$cmd = $cmd -replace "`r`n", "`n"
 
 docker @Compose run --rm minio-client $cmd
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

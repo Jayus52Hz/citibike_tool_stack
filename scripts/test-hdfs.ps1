@@ -9,6 +9,7 @@ set -e
 /opt/hadoop-3.2.1/bin/hdfs dfs -put -f /tmp/test.csv /data/test/test.csv
 /opt/hadoop-3.2.1/bin/hdfs dfs -cat /data/test/test.csv
 '@
+$cmd = $cmd -replace "`r`n", "`n"
 
 docker @Compose exec -T namenode bash -lc $cmd
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }

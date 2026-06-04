@@ -153,7 +153,7 @@ services:
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     ports:
-      - "3306:3306"
+      - "3307:3306"
     volumes:
       - mysql_data:/var/lib/mysql
       - ./mysql/init:/docker-entrypoint-initdb.d:ro
@@ -170,18 +170,19 @@ services:
       context: ./docker/sqoop
     container_name: citibike-sqoop
     hostname: sqoop
+    entrypoint: ["bash", "-lc"]
     environment:
       HADOOP_USER_NAME: root
       MYSQL_DATABASE: ${MYSQL_DATABASE}
       MYSQL_USER: ${MYSQL_USER}
       MYSQL_PASSWORD: ${MYSQL_PASSWORD}
     volumes:
-      - ./hadoop-conf/core-site.xml:/opt/hadoop/etc/hadoop/core-site.xml:ro
-      - ./hadoop-conf/hdfs-site.xml:/opt/hadoop/etc/hadoop/hdfs-site.xml:ro
-      - ./hadoop-conf/mapred-site.xml:/opt/hadoop/etc/hadoop/mapred-site.xml:ro
-      - ./hadoop-conf/yarn-site.xml:/opt/hadoop/etc/hadoop/yarn-site.xml:ro
+      - ./hadoop-conf/core-site.xml:/opt/hadoop-3.2.1/etc/hadoop/core-site.xml:ro
+      - ./hadoop-conf/hdfs-site.xml:/opt/hadoop-3.2.1/etc/hadoop/hdfs-site.xml:ro
+      - ./hadoop-conf/mapred-site.xml:/opt/hadoop-3.2.1/etc/hadoop/mapred-site.xml:ro
+      - ./hadoop-conf/yarn-site.xml:/opt/hadoop-3.2.1/etc/hadoop/yarn-site.xml:ro
       - ./data:/sample-data:ro
-    command: ["bash", "-lc", "tail -f /dev/null"]
+    command: ["tail -f /dev/null"]
     depends_on:
       mysql:
         condition: service_healthy
