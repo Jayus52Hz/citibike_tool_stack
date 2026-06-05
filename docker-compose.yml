@@ -247,6 +247,54 @@ services:
     networks:
       - bigdata_net
 
+  realtime-producer:
+    build:
+      context: ./docker/realtime
+    container_name: citibike-realtime-producer
+    hostname: realtime-producer
+    profiles:
+      - realtime
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      CITIBIKE_STATION_STATUS_TOPIC: citibike.station_status
+      CITIBIKE_STATION_STATUS_URL: https://gbfs.citibikenyc.com/gbfs/2.3/en/station_status.json
+      REALTIME_INTERVAL_SECONDS: 60
+    volumes:
+      - ./realtime:/app:ro
+    command: ["python", "/app/producer.py", "--loop"]
+    depends_on:
+      - kafka
+    networks:
+      - bigdata_net
+
+  realtime-consumer:
+    build:
+      context: ./docker/realtime
+    container_name: citibike-realtime-consumer
+    hostname: realtime-consumer
+    profiles:
+      - realtime
+    environment:
+      KAFKA_BOOTSTRAP_SERVERS: kafka:9092
+      CITIBIKE_STATION_STATUS_TOPIC: citibike.station_status
+      REALTIME_CONSUMER_GROUP: citibike-station-status-mysql
+      REALTIME_OFFSET_RESET: latest
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    volumes:
+      - ./realtime:/app:ro
+    command: ["python", "/app/consumer_mysql.py", "--loop", "--timeout-ms", "1000"]
+    depends_on:
+      mysql:
+        condition: service_healthy
+      kafka:
+        condition: service_started
+    networks:
+      - bigdata_net
+
   airflow-postgres:
     image: postgres:15
     container_name: citibike-airflow-postgres

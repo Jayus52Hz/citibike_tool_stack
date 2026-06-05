@@ -32,3 +32,21 @@ CREATE TABLE IF NOT EXISTS citibike_stations_clean (
   is_returning INT,
   last_reported DATETIME
 );
+
+CREATE TABLE IF NOT EXISTS citibike_station_status_stream (
+  station_id VARCHAR(100) PRIMARY KEY,
+  observed_at DATETIME NOT NULL,
+  source_url VARCHAR(500),
+  feed_last_updated DATETIME,
+  num_bikes_available INT,
+  num_docks_available INT,
+  is_installed INT,
+  is_renting INT,
+  is_returning INT,
+  station_last_reported DATETIME,
+  kafka_topic VARCHAR(255),
+  kafka_partition INT,
+  kafka_offset BIGINT,
+  raw_payload JSON,
+  updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
+);

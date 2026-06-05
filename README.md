@@ -77,6 +77,7 @@ Ket qua ky vong:
 - Sqoop import `test_data` sang HDFS va export lai vao `sqoop_export_test`.
 - Drill REST query tra ve row tu `/sample-data/test.csv`.
 - Kafka consume duoc message `hello-bigdata`.
+- Realtime Kafka pipeline tao topic `citibike.station_status`, day station status tu GBFS vao Kafka, va consumer ghi vao MySQL bang `citibike_station_status_stream`.
 - Airflow DAG `tool_stack_health_check` chay success bang `airflow dags test`.
 - Superset health endpoint tra HTTP 200 va ket noi duoc MySQL `testdb`.
 - MinIO bucket `test-bucket` co file `test.csv`.
@@ -95,6 +96,32 @@ Tat ca service cung nam tren network Docker `bigdata_net`. Khi ket noi tu contai
 - Airflow metadata DB: `airflow-postgres:5432`
 - Superset: `superset:8088`
 - MinIO: `http://minio:9000`
+
+## Citi Bike Batch and Realtime Pipeline
+
+Chay batch pipeline de tai du lieu Citi Bike, luu raw vao HDFS/MinIO, lam sach bang Spark, va export vao MySQL:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-citibike-pipeline.ps1
+```
+
+Chay realtime Kafka validation:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-citibike-realtime-test.ps1
+```
+
+Realtime flow:
+
+```text
+Citi Bike GBFS station_status -> Kafka topic citibike.station_status -> MySQL table citibike_station_status_stream
+```
+
+Chay realtime lien tuc:
+
+```powershell
+docker compose --profile realtime up -d --build realtime-producer realtime-consumer
+```
 
 ## Stop and Clean
 
