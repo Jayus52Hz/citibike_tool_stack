@@ -12,13 +12,17 @@ ENV HADOOP_HOME=/opt/hadoop-3.2.1 \
     SQOOP_HOME=/opt/sqoop \
     PATH=/opt/sqoop/bin:/opt/hadoop-3.2.1/bin:/opt/hadoop-3.2.1/sbin:$PATH
 
+# Copy từ local thay vì curl
+COPY deps/sqoop-1.4.7.bin__hadoop-2.6.0.tar.gz /tmp/sqoop.tgz
+COPY deps/mysql-connector-j-8.0.33.jar /tmp/mysql-connector-j.jar
+COPY deps/commons-lang-2.6.jar /tmp/commons-lang-2.6.jar
+
 RUN set -eux; \
-    curl --retry 5 --retry-delay 5 -fsSL "https://archive.apache.org/dist/sqoop/${SQOOP_VERSION}/sqoop-${SQOOP_VERSION}.bin__hadoop-2.6.0.tar.gz" -o /tmp/sqoop.tgz; \
     tar -xzf /tmp/sqoop.tgz -C /opt; \
     mv "/opt/sqoop-${SQOOP_VERSION}.bin__hadoop-2.6.0" "${SQOOP_HOME}"; \
     rm /tmp/sqoop.tgz; \
-    curl --retry 5 --retry-delay 5 -fsSL "https://repo1.maven.org/maven2/com/mysql/mysql-connector-j/${MYSQL_CONNECTOR_VERSION}/mysql-connector-j-${MYSQL_CONNECTOR_VERSION}.jar" -o "${SQOOP_HOME}/lib/mysql-connector-j.jar"; \
-    curl --retry 5 --retry-delay 5 -fsSL "https://repo1.maven.org/maven2/commons-lang/commons-lang/2.6/commons-lang-2.6.jar" -o "${SQOOP_HOME}/lib/commons-lang-2.6.jar"; \
+    mv /tmp/mysql-connector-j.jar "${SQOOP_HOME}/lib/mysql-connector-j.jar"; \
+    mv /tmp/commons-lang-2.6.jar "${SQOOP_HOME}/lib/commons-lang-2.6.jar"; \
     cp "${SQOOP_HOME}/conf/sqoop-env-template.sh" "${SQOOP_HOME}/conf/sqoop-env.sh"; \
     { \
       echo "export HADOOP_COMMON_HOME=${HADOOP_HOME}"; \
