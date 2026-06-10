@@ -97,6 +97,7 @@ Tat ca service cung nam tren network Docker `bigdata_net`. Khi ket noi tu contai
 - Airflow metadata DB: `airflow-postgres:5432`
 - Superset: `superset:8088`
 - MinIO: `http://minio:9000`
+- Streamlit: `http://localhost:8501`
 
 ## Citi Bike Batch and Realtime Pipeline
 
@@ -125,46 +126,7 @@ Khoi dong GUI cung stack:
 ```powershell
 docker compose up -d --build gui-app
 ```
-
 Mo `http://localhost:8501`.
-
-Ung dung Streamlit ho tro:
-
-- Thuc thi query: trang `SQL Workbench` chay `SELECT`, `SHOW`, `DESCRIBE`, `EXPLAIN`, va cac lenh `INSERT`, `UPDATE`, `DELETE` sau khi xac nhan.
-- CRUD: cac trang `Manage Trips` va `Manage Stations` cho phep them, xem, sua, xoa du lieu bang bang co the chinh sua.
-- Sao luu/phuc hoi: trang `Backup / Restore` xuat cac bang MySQL duoc chon thanh file ZIP chua CSV va phuc hoi lai voi che do thay the tuy chon.
-- Truc quan hoa: trang `MR Dashboard` co toi thieu 5 bieu do voi nhieu loai, gom bieu do cot, duong/vung, tron/donut va ban do tram xe.
-
-## Cong viec da thuc hien
-
-### 1. Ho tro thuc thi query va CRUD
-
-- Da them trang `SQL Workbench` trong Streamlit GUI.
-- Cho phep chay cac lenh doc du lieu: `SELECT`, `SHOW`, `DESCRIBE`, `EXPLAIN`.
-- Cho phep chay cac lenh thay doi du lieu: `INSERT`, `UPDATE`, `DELETE` sau khi nguoi dung tick xac nhan.
-- Da co trang `Manage Trips` de them, xem, sua, xoa bang `citibike_trips_clean`.
-- Da co trang `Manage Stations` de them, xem, sua, xoa bang `citibike_stations_clean`.
-- Da cap nhat ket noi MySQL de app chay duoc ca ngoai host va trong Docker thong qua `MYSQL_HOST`, `MYSQL_PORT`.
-- Da them package `cryptography` vao `gui_app/requirements.txt` de PyMySQL ket noi duoc MySQL 8 voi co che `caching_sha2_password`.
-
-### 2. Sao luu va phuc hoi du lieu
-
-- Da them trang `Backup / Restore` trong Streamlit GUI.
-- Chuc nang sao luu cho phep chon cac bang MySQL va tai ve file ZIP.
-- File backup gom cac file CSV trong thu muc `tables/` va file `manifest.json` mo ta thoi gian tao, ten bang, so dong, danh sach cot.
-- Chuc nang phuc hoi cho phep upload file ZIP backup va ghi lai du lieu vao MySQL.
-- Co tuy chon xoa du lieu hien tai truoc khi phuc hoi.
-
-### 3. Truc quan hoa du lieu
-
-- Da co trang `Dashboard` trong Streamlit de doc cac bang report `rpt_mr*` tu MySQL.
-- Dashboard ho tro 2 che do: `Bang du lieu` va `Bieu do`.
-- Dashboard co toi thieu 5 bieu do va nhieu loai bieu do:
-  - Bieu do cot cho hanh vi nguoi dung, top tuyen duong, phan tich theo ngay.
-  - Bieu do duong/vung cho xu huong theo gio.
-  - Bieu do tron/donut cho anomaly va capacity tram.
-  - Ban do vi tri tram xe trong trang `Manage Stations`.
-- Da them script `scripts/refresh-dashboard-reports.ps1` de nap lai cac bang report `rpt_mr*` tu du lieu sach trong MySQL.
 
 Chay lai du lieu dashboard:
 
@@ -172,25 +134,7 @@ Chay lai du lieu dashboard:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\refresh-dashboard-reports.ps1
 ```
 
-### 4. Superset
 
-- Superset da co service trong `docker-compose.yml` va chay tai `http://localhost:8089`.
-- Tai khoan mac dinh: `admin` / `admin`.
-- Superset init tu dong tao ket noi database `MySQL testdb`.
-- Co the dung Superset de tao dashboard truc quan hoa tu cac bang:
-  - `rpt_mr1_user_behavior`
-  - `rpt_mr2_top_routes`
-  - `rpt_mr3_hourly_trends`
-  - `rpt_mr4_weekly_analysis`
-  - `rpt_mr5_distance_calc`
-  - `rpt_mr6_anomaly_detection`
-  - `rpt_mr7_station_capacity`
-  - `rpt_mr8_station_status_check`
-
-Khoi dong Superset:
-
-```powershell
-docker compose up -d --build superset
 ```
 
 Chay realtime lien tuc:
