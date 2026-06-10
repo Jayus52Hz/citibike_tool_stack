@@ -15,9 +15,9 @@ load_dotenv(dotenv_path=ENV_PATH)
 
 # 2. Cấu hình DB lấy từ file .env chung
 DB_CONFIG = {
-    # Chạy Streamlit ngoài container nên gọi thẳng vào localhost:3307
-    "host":   "localhost",
-    "port":   3307,
+    # MYSQL_HOST/MYSQL_PORT giúp app chạy được cả ngoài máy host và trong Docker.
+    "host":   os.getenv("MYSQL_HOST", "localhost"),
+    "port":   int(os.getenv("MYSQL_PORT", "3307")),
     # Các biến cấu hình MySQL (Khớp với file .env chung)
     "db":     os.getenv("MYSQL_DATABASE", "testdb"),
     "user":   os.getenv("MYSQL_USER", "testuser"),
@@ -73,6 +73,18 @@ def run_many(sql: str, data: list) -> int:
     except Exception:
         conn.rollback()
         raise
+    finally:
+        conn.close()
+
+
+def run_query_one(sql: str, params=None) -> dict:
+    """Chạy query và trả về dòng đầu tiên dạng dict."""
+    conn = get_connection()
+    try:
+        with conn.cursor() as cur:
+            cur.execute(sql, params or ())
+            row = cur.fetchone()
+        return row or {}
     finally:
         conn.close()
 

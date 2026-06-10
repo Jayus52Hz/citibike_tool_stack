@@ -7,3 +7,11 @@ Table: rpt_mr6_anomaly_detection | Records: 0
 Table: rpt_mr7_station_capacity | Records: 3
 Table: rpt_mr8_station_status_check | Records: 2
 Table: rpt_mr1_user_behavior | Records: 4
+Table: rpt_mr1_user_behavior | Records: 0
+Table: rpt_mr2_top_routes | Records: 0
+Table: rpt_mr3_hourly_trends | Records: 0
+Table: rpt_mr4_weekly_analysis | Records: 0
+Table: rpt_mr5_distance_calc | Records: 0
+Table: rpt_mr6_anomaly_detection | Records: 0
+Table: rpt_mr7_station_capacity | Records: 0
+Table: rpt_mr8_station_status_check | Records: 0
