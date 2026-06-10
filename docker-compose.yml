@@ -17,7 +17,11 @@ volumes:
 
 services:
   namenode:
-    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    build:
+      context: ./docker/hadoop-python
+      args:
+        BASE_IMAGE: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    image: citibike-hadoop-namenode-python:latest
     container_name: citibike-namenode
     hostname: namenode
     environment:
@@ -73,7 +77,11 @@ services:
       - bigdata_net
 
   nodemanager:
-    image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+    build:
+      context: ./docker/hadoop-python
+      args:
+        BASE_IMAGE: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+    image: citibike-hadoop-nodemanager-python:latest
     container_name: citibike-nodemanager
     hostname: nodemanager
     environment:

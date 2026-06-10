@@ -1,220 +1,215 @@
-# Citi Bike Big Data Tool Stack
+# Citi Bike Big Data Pipeline
 
-Project nay chi dung de dung tool stack Big Data bang Docker Compose. Du lieu test tu sinh gom 1 dong: `1,test,100`.
+Du an dung Docker Compose de chay mot pipeline Big Data end-to-end tren du lieu Citi Bike:
 
-## Prerequisites
+```text
+Citi Bike raw data
+  -> HDFS + MinIO
+  -> Spark clean/normalize
+  -> MySQL
+  -> Kafka realtime
+  -> Hadoop MapReduce
+  -> MySQL report tables
+  -> Streamlit GUI + Superset
+```
+
+## 1. Trang thai theo rubric
+
+| Nhom viec | Trang thai | Bang chung trong project |
+| --- | --- | --- |
+| Docker Compose build du tools va ket noi voi nhau | Done | `docker-compose.yml`, `scripts/run-all-tests.ps1` |
+| File huong dan chay | Done | `README.md`, `CITIBIKE_PIPELINE_GUIDE.md` |
+| Da dang nguon du lieu | Done | Citi Bike trip CSV zip + GBFS station JSON/status |
+| Chuong trinh thu thap du lieu | Done | `scripts/run-citibike-pipeline.ps1`, `realtime/producer.py` |
+| Du lieu lon hon 1000 records | Done | lan test gan nhat: 50,488 trips, 2,411 stations |
+| Lam sach, chuan hoa du lieu | Done | `spark/apps/clean_citibike.py` |
+| Luu tru vao DBMS | Done | MySQL tables `citibike_*` |
+| CSDL quan he / NoSQL | Done | MySQL relational + MinIO object storage |
+| Ket noi Hadoop System | Done | HDFS, YARN, MapReduce, Sqoop export |
+| Ho tro query | Done | Streamlit page `SQL Workbench` |
+| Ho tro CRUD | Done | Streamlit pages `Manage Trips`, `Manage Stations` |
+| Sao luu, phuc hoi du lieu | Done | Streamlit page `Backup / Restore` |
+| Truc quan hoa toi thieu 5 bieu do, 3 loai | Done | Streamlit `Dashboard` + Superset |
+| MapReduce | Done | 8 jobs trong `mapreduce/` |
+| GUI quan ly du lieu | Done | Streamlit app tai `http://127.0.0.1:8501` |
+
+Phan cua Nang khong bi thieu: query, CRUD, backup/restore va visualization da co trong `gui_app/pages/`. Neu can nop minh chung, chay pipeline va mo GUI de chup cac trang `SQL Workbench`, `Manage Trips`, `Manage Stations`, `Backup / Restore`, `Dashboard`.
+
+## 2. Cau truc thu muc
+
+```text
+citibike_tool_stack/
+  airflow/
+    dags/                         Airflow health DAG
+  data/
+    raw/
+      trips/                      Citi Bike trip CSV zip va file da extract
+      gbfs/                       GBFS station_information/status JSON
+  docker/
+    drill/                        Drill config override
+    hadoop-python/                Hadoop image co Python de chay mapper/reducer
+    realtime/                     Dockerfile cho Kafka producer/consumer
+    sqoop/                        Sqoop Dockerfile va build deps
+    superset/                     Superset Dockerfile/config
+  gui_app/
+    app.py                        Streamlit home
+    db_config.py                  MySQL helper
+    pages/
+      1_*_Dashboard.py            Visualization tu bang report
+      2_*_Manage_Trips.py         CRUD trips
+      3_*_Manage_Stations.py      CRUD stations
+      4_SQL_Workbench.py          Query + SQL CRUD co xac nhan
+      5_Backup_Restore.py         Backup/restore MySQL bang ZIP/CSV
+  hadoop-conf/                    Hadoop client config
+  logs/                           Bao cao moi nhat sau khi chay script
+  mapreduce/
+    mr1_user_behavior/
+    mr2_top_routes/
+    mr3_hourly_trends/
+    mr4_weekly_analysis/
+    mr5_distance_calc/
+    mr6_anomaly_detection/
+    mr7_station_capacity/
+    mr8_station_status_check/
+  mysql/
+    init/                         Schema MySQL va bang report
+  realtime/
+    producer.py                   GBFS -> Kafka
+    consumer_mysql.py             Kafka -> MySQL
+  scripts/
+    prepare-build-deps.ps1        Kiem tra/copy/tai dependency cho build
+    run-all-tests.ps1             Smoke test tat ca service
+    run-citibike-pipeline.ps1     Batch pipeline
+    run-citibike-realtime-test.ps1 Realtime validation
+    run-all-jobs.ps1              Chay MapReduce jobs
+    export_all_to_mysql.ps1       Export MR result ve MySQL
+    refresh-dashboard-reports.ps1 Tao/lap lai report dashboard bang SQL
+  spark/
+    apps/
+      clean_citibike.py           Spark cleaning job
+  docker-compose.yml
+  README.md
+  CITIBIKE_PIPELINE_GUIDE.md
+  README_MAPREDUCE.md
+  TESTING.md
+```
+
+## 3. Yeu cau moi truong
 
 - Docker Desktop dang chay.
-- Toi thieu 12 GB RAM kha dung cho Docker la thuc te hon vi stack gom Hadoop, Spark, Kafka, Airflow, Superset, Drill, MySQL va MinIO.
-- Chay lenh trong PowerShell tai thu muc `D:\Bigdata\New game\citibike_tool_stack`.
-
-## Start
+- Docker nen co toi thieu 12 GB RAM kha dung vi stack gom Hadoop, Spark, Kafka, MySQL, Airflow, Superset, Drill va MinIO.
+- Chay lenh trong PowerShell.
+- Thu muc lam viec:
 
 ```powershell
 cd "D:\Bigdata\New game\citibike_tool_stack"
+```
+
+## 4. Chay nhanh
+
+Neu clone moi chua co `.env`:
+
+```powershell
 Copy-Item .env.example .env
+```
+
+Chuan bi dependency build va start stack:
+
+```powershell
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\prepare-build-deps.ps1
 docker compose up -d --build
 docker compose ps
 ```
 
-Lan dau se mat thoi gian vi can pull images va build image Sqoop/Superset.
-Sau khi container len, doi them 1-3 phut truoc khi chay smoke test vi Hadoop, Drill, Airflow va Superset can thoi gian init.
-
-## URLs and Ports
-
-| Service | URL / Port | Login |
-| --- | --- | --- |
-| Hadoop NameNode UI | http://localhost:9870 | none |
-| Hadoop ResourceManager UI | http://localhost:8088 | none |
-| Hadoop NodeManager UI | http://localhost:8042 | none |
-| Hadoop HistoryServer UI | http://localhost:19888 | none |
-| Spark Master UI | http://localhost:8091 | none |
-| Spark Worker UI | http://localhost:8092 | none |
-| MySQL | localhost:3307 | `testuser` / `testpass` |
-| Drill UI | http://localhost:8047 | none |
-| ZooKeeper | localhost:2181 | internal/Drill coordination |
-| Kafka | localhost:9092 exposed, tests use internal `kafka:9092` | none |
-| Airflow | http://localhost:8082 | `admin` / `admin` |
-| Superset | http://localhost:8089 | `admin` / `admin` |
-| Streamlit GUI | http://localhost:8501 | none |
-| MinIO API | http://localhost:9002 | `minioadmin` / `minioadmin` |
-| MinIO Console | http://localhost:9003 | `minioadmin` / `minioadmin` |
-
-## Smoke Tests
-
-Chay tung test:
-
-```powershell
-.\scripts\test-hdfs.ps1
-.\scripts\test-spark.ps1
-.\scripts\test-mysql.ps1
-.\scripts\test-sqoop.ps1
-.\scripts\test-drill.ps1
-.\scripts\test-kafka.ps1
-.\scripts\test-airflow.ps1
-.\scripts\test-superset.ps1
-.\scripts\test-minio.ps1
-```
-
-Hoac chay tat ca:
-
-```powershell
-.\scripts\run-all-tests.ps1
-```
-
-Neu PowerShell bao `running scripts is disabled`, chay bang:
+Chay smoke test:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-all-tests.ps1
 ```
 
-Neu test fail do service chua san sang, kiem tra `docker compose ps`, doi them vai chuc giay va chay lai script do.
-
-Ket qua ky vong:
-
-- HDFS tao `/data/test/test.csv` va `hdfs dfs -cat` in `id,name,value` va `1,test,100`.
-- Spark doc `hdfs://namenode:9000/data/test/test.csv`, ghi `/data/test/spark-output`, va in `spark_rows= 1`.
-- MySQL select duoc bang `test_data`.
-- Sqoop import `test_data` sang HDFS va export lai vao `sqoop_export_test`.
-- Drill REST query tra ve row tu `/sample-data/test.csv`.
-- Kafka consume duoc message `hello-bigdata`.
-- Realtime Kafka pipeline tao topic `citibike.station_status`, day station status tu GBFS vao Kafka, va consumer ghi vao MySQL bang `citibike_station_status_stream`.
-- Airflow DAG `tool_stack_health_check` chay success bang `airflow dags test`.
-- Superset health endpoint tra HTTP 200 va ket noi duoc MySQL `testdb`.
-- MinIO bucket `test-bucket` co file `test.csv`.
-
-## Service Hostnames
-
-Tat ca service cung nam tren network Docker `bigdata_net`. Khi ket noi tu container khac, dung hostname service:
-
-- HDFS: `hdfs://namenode:9000`
-- YARN ResourceManager: `resourcemanager:8088`
-- Spark master: `spark://spark-master:7077`
-- MySQL: `mysql:3306`
-- Drill: `drill:8047`
-- ZooKeeper: `zookeeper:2181`
-- Kafka: `kafka:9092`
-- Airflow metadata DB: `airflow-postgres:5432`
-- Superset: `superset:8088`
-- MinIO: `http://minio:9000`
-
-## Citi Bike Batch and Realtime Pipeline
-
-Chay batch pipeline de tai du lieu Citi Bike, luu raw vao HDFS/MinIO, lam sach bang Spark, va export vao MySQL:
+Chay pipeline chinh:
 
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-citibike-pipeline.ps1
-```
-
-Chay realtime Kafka validation:
-
-```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-citibike-realtime-test.ps1
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-all-jobs.ps1 -JobId "ALL"
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\export_all_to_mysql.ps1 -JobId "ALL"
 ```
 
-Realtime flow:
+Mo GUI:
 
 ```text
-Citi Bike GBFS station_status -> Kafka topic citibike.station_status -> MySQL table citibike_station_status_stream
+http://127.0.0.1:8501
 ```
 
-## Ung dung du lieu: Query, CRUD, sao luu/phuc hoi, truc quan hoa
+Huong dan chi tiet nam trong `CITIBIKE_PIPELINE_GUIDE.md`.
 
-Khoi dong GUI cung stack:
+## 5. Build dependency va file Hadoop zip
+
+Khong bat buoc phai co file Hadoop zip rieng tren may de build stack nay. Hadoop chay tu Docker image `bde2020/hadoop-*`, va project da co image bo sung Python trong `docker/hadoop-python/` de chay MapReduce Python.
+
+Thu muc `docker/sqoop/deps/` can cac file cho image Sqoop:
+
+- `sqoop-1.4.7.bin__hadoop-2.6.0.tar.gz`
+- `mysql-connector-j-8.0.33.jar`
+- `commons-lang-2.6.jar`
+
+Script sau se xu ly tu dong:
 
 ```powershell
-docker compose up -d --build gui-app
+powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\prepare-build-deps.ps1
 ```
 
-Mo `http://localhost:8501`.
+Neu may da co file trong workspace cha, script se copy vao `docker/sqoop/deps/`. Neu khong co, script se tai tu Apache Archive/Maven Central. Vi vay khi build moi nen chay script nay truoc `docker compose up -d --build`.
 
-Ung dung Streamlit ho tro:
+## 6. URL dich vu
 
-- Thuc thi query: trang `SQL Workbench` chay `SELECT`, `SHOW`, `DESCRIBE`, `EXPLAIN`, va cac lenh `INSERT`, `UPDATE`, `DELETE` sau khi xac nhan.
-- CRUD: cac trang `Manage Trips` va `Manage Stations` cho phep them, xem, sua, xoa du lieu bang bang co the chinh sua.
-- Sao luu/phuc hoi: trang `Backup / Restore` xuat cac bang MySQL duoc chon thanh file ZIP chua CSV va phuc hoi lai voi che do thay the tuy chon.
-- Truc quan hoa: trang `MR Dashboard` co toi thieu 5 bieu do voi nhieu loai, gom bieu do cot, duong/vung, tron/donut va ban do tram xe.
+| Service | URL / Port | Login |
+| --- | --- | --- |
+| Streamlit GUI | http://127.0.0.1:8501 | none |
+| Superset | http://127.0.0.1:8089 | `admin` / `admin` |
+| Hadoop NameNode | http://127.0.0.1:9870 | none |
+| Hadoop ResourceManager | http://127.0.0.1:8088 | none |
+| Spark Master | http://127.0.0.1:8091 | none |
+| Spark Worker | http://127.0.0.1:8092 | none |
+| MySQL | `127.0.0.1:3307` | `testuser` / `testpass` |
+| Drill | http://127.0.0.1:8047 | none |
+| Airflow | http://127.0.0.1:8082 | `admin` / `admin` |
+| MinIO API | http://127.0.0.1:9002 | `minioadmin` / `minioadmin` |
+| MinIO Console | http://127.0.0.1:9003 | `minioadmin` / `minioadmin` |
+| Kafka | `127.0.0.1:9092` | none |
 
-## Cong viec da thuc hien
+## 7. Cac bang chinh
 
-### 1. Ho tro thuc thi query va CRUD
+MySQL database: `testdb`
 
-- Da them trang `SQL Workbench` trong Streamlit GUI.
-- Cho phep chay cac lenh doc du lieu: `SELECT`, `SHOW`, `DESCRIBE`, `EXPLAIN`.
-- Cho phep chay cac lenh thay doi du lieu: `INSERT`, `UPDATE`, `DELETE` sau khi nguoi dung tick xac nhan.
-- Da co trang `Manage Trips` de them, xem, sua, xoa bang `citibike_trips_clean`.
-- Da co trang `Manage Stations` de them, xem, sua, xoa bang `citibike_stations_clean`.
-- Da cap nhat ket noi MySQL de app chay duoc ca ngoai host va trong Docker thong qua `MYSQL_HOST`, `MYSQL_PORT`.
-- Da them package `cryptography` vao `gui_app/requirements.txt` de PyMySQL ket noi duoc MySQL 8 voi co che `caching_sha2_password`.
+Bang du lieu sach:
 
-### 2. Sao luu va phuc hoi du lieu
+- `citibike_trips_clean`
+- `citibike_stations_clean`
+- `citibike_station_status_stream`
 
-- Da them trang `Backup / Restore` trong Streamlit GUI.
-- Chuc nang sao luu cho phep chon cac bang MySQL va tai ve file ZIP.
-- File backup gom cac file CSV trong thu muc `tables/` va file `manifest.json` mo ta thoi gian tao, ten bang, so dong, danh sach cot.
-- Chuc nang phuc hoi cho phep upload file ZIP backup va ghi lai du lieu vao MySQL.
-- Co tuy chon xoa du lieu hien tai truoc khi phuc hoi.
+Bang report MapReduce:
 
-### 3. Truc quan hoa du lieu
+- `rpt_mr1_user_behavior`
+- `rpt_mr2_top_routes`
+- `rpt_mr3_hourly_trends`
+- `rpt_mr4_weekly_analysis`
+- `rpt_mr5_distance_calc`
+- `rpt_mr6_anomaly_detection`
+- `rpt_mr7_station_capacity`
+- `rpt_mr8_station_status_check`
 
-- Da co trang `Dashboard` trong Streamlit de doc cac bang report `rpt_mr*` tu MySQL.
-- Dashboard ho tro 2 che do: `Bang du lieu` va `Bieu do`.
-- Dashboard co toi thieu 5 bieu do va nhieu loai bieu do:
-  - Bieu do cot cho hanh vi nguoi dung, top tuyen duong, phan tich theo ngay.
-  - Bieu do duong/vung cho xu huong theo gio.
-  - Bieu do tron/donut cho anomaly va capacity tram.
-  - Ban do vi tri tram xe trong trang `Manage Stations`.
-- Da them script `scripts/refresh-dashboard-reports.ps1` de nap lai cac bang report `rpt_mr*` tu du lieu sach trong MySQL.
+## 8. Dung stack
 
-Chay lai du lieu dashboard:
-
-```powershell
-powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\refresh-dashboard-reports.ps1
-```
-
-### 4. Superset
-
-- Superset da co service trong `docker-compose.yml` va chay tai `http://localhost:8089`.
-- Tai khoan mac dinh: `admin` / `admin`.
-- Superset init tu dong tao ket noi database `MySQL testdb`.
-- Co the dung Superset de tao dashboard truc quan hoa tu cac bang:
-  - `rpt_mr1_user_behavior`
-  - `rpt_mr2_top_routes`
-  - `rpt_mr3_hourly_trends`
-  - `rpt_mr4_weekly_analysis`
-  - `rpt_mr5_distance_calc`
-  - `rpt_mr6_anomaly_detection`
-  - `rpt_mr7_station_capacity`
-  - `rpt_mr8_station_status_check`
-
-Khoi dong Superset:
-
-```powershell
-docker compose up -d --build superset
-```
-
-Chay realtime lien tuc:
-
-```powershell
-docker compose --profile realtime up -d --build realtime-producer realtime-consumer
-```
-
-## Stop and Clean
-
-Dung stack nhung giu volume:
+Dung container nhung giu volume:
 
 ```powershell
 docker compose down
 ```
 
-Xoa ca data volume cua project:
+Xoa ca volume du lieu:
 
 ```powershell
 docker compose down -v
 ```
-
-## Notes
-
-- Superset init tu dong tao database connection `MySQL testdb`. Neu can tao lai thu cong, dung URI `mysql+pymysql://testuser:testpass@mysql:3306/testdb`.
-- Drill test dang query file local mounted vao container tai `/sample-data/test.csv`. Neu muon cau hinh Drill query HDFS, tao storage plugin trong UI theo huong dan trong `manual-steps.md`.
-- Sqoop 1.4.7 la tool cu; image da cai Hadoop client va MySQL JDBC driver. Neu build/download archive bi loi mang, chay lai `docker compose build sqoop`.

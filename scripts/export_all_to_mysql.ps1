@@ -3,6 +3,8 @@ param(
     [string]$JobId
 )
 
+$ErrorActionPreference = "Continue"
+
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $LogDir = Join-Path $ProjectRoot "logs"
 if (!(Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir | Out-Null }
@@ -29,13 +31,22 @@ function Invoke-ExportJob($job) {
     
     # 1. Lam sach bang
     docker exec -i citibike-mysql mysql -utestuser -ptestpass -D testdb -e "TRUNCATE TABLE $table;" | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Khong truncate duoc bang $table"
+    }
     
     # 2. Export
     $sqoopCmd = "/opt/sqoop/bin/sqoop export --connect 'jdbc:mysql://mysql:3306/testdb?useSSL=false' --username testuser --password testpass --table $table --export-dir /data/citibike/mapreduce/$id --input-fields-terminated-by '\t' --input-lines-terminated-by '\n' --input-null-string '\\N' --input-null-non-string '\\N' -m 1"
     docker exec -i citibike-sqoop bash -c "$sqoopCmd" | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Sqoop export that bai cho $id -> $table"
+    }
     
     # 3. Kiem tra va ghi log
     $count = docker exec -i citibike-mysql mysql -utestuser -ptestpass -D testdb -N -e "SELECT COUNT(*) FROM $table;"
+    if ($LASTEXITCODE -ne 0 -or $null -eq $count) {
+        throw "Khong doc duoc row count cua $table"
+    }
     "Table: $table | Records: $($count.Trim())" | Out-File -FilePath $LogFileMD -Append -Encoding utf8
     Write-Host "Xong $table. Tong so dong: $($count.Trim())" -ForegroundColor Green
 }
