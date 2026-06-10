@@ -68,6 +68,52 @@ docker compose ps
 
 Sau do doi them va chay lai script test.
 
+## 3.5. Chay pipeline bang Airflow orchestration
+
+Neu muon demo pipeline bang Airflow, start Airflow truoc:
+
+```powershell
+docker compose up -d --build airflow-init airflow-webserver airflow-scheduler
+```
+
+Mo Airflow UI:
+
+```text
+http://127.0.0.1:8082
+```
+
+Login:
+
+```text
+admin / admin
+```
+
+Trigger DAG dau tien:
+
+```powershell
+docker exec citibike-airflow-scheduler airflow dags trigger citibike_01_ingest_clean
+```
+
+Airflow se chay 4 DAG theo thu tu:
+
+```text
+citibike_01_ingest_clean
+  -> citibike_02_realtime_kafka
+  -> citibike_03_mapreduce
+  -> citibike_04_export_reports
+```
+
+Co the chay rieng tung DAG khi debug:
+
+```powershell
+docker exec citibike-airflow-scheduler airflow dags trigger citibike_01_ingest_clean
+docker exec citibike-airflow-scheduler airflow dags trigger citibike_02_realtime_kafka
+docker exec citibike-airflow-scheduler airflow dags trigger citibike_03_mapreduce
+docker exec citibike-airflow-scheduler airflow dags trigger citibike_04_export_reports
+```
+
+Huong dan chi tiet: `AIRFLOW_GUIDE.md`.
+
 ## 4. Chay batch pipeline
 
 ```powershell
@@ -292,11 +338,16 @@ SELECT * FROM rpt_mr2_top_routes ORDER BY trip_count DESC LIMIT 10;
 
 Nen nop kem cac file/log sau:
 
+- `logs/citibike_airflow_01_ingest_clean_latest.md`
+- `logs/citibike_airflow_02_realtime_latest.md`
+- `logs/citibike_airflow_03_mapreduce_latest.md`
+- `logs/citibike_airflow_04_export_reports_latest.md`
 - `logs/citibike_pipeline_latest.md`
 - `logs/citibike_realtime_latest.md`
 - `logs/citibike_mapreduce_latest.md`
 - `logs/citibike_sqoop_export_latest.md`
 - Screenshot `docker compose ps`
+- Screenshot Airflow UI 4 DAG success
 - Screenshot Streamlit `Dashboard`
 - Screenshot Streamlit `SQL Workbench`
 - Screenshot Streamlit `Manage Trips`

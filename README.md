@@ -19,6 +19,7 @@ Citi Bike raw data
 | --- | --- | --- |
 | Docker Compose build du tools va ket noi voi nhau | Done | `docker-compose.yml`, `scripts/run-all-tests.ps1` |
 | File huong dan chay | Done | `README.md`, `CITIBIKE_PIPELINE_GUIDE.md` |
+| Airflow orchestration | Done | 4 DAGs trong `airflow/dags/citibike_*.py` |
 | Da dang nguon du lieu | Done | Citi Bike trip CSV zip + GBFS station JSON/status |
 | Chuong trinh thu thap du lieu | Done | `scripts/run-citibike-pipeline.ps1`, `realtime/producer.py` |
 | Du lieu lon hon 1000 records | Done | lan test gan nhat: 50,488 trips, 2,411 stations |
@@ -40,12 +41,19 @@ Phan cua Nang khong bi thieu: query, CRUD, backup/restore va visualization da co
 ```text
 citibike_tool_stack/
   airflow/
-    dags/                         Airflow health DAG
+    dags/
+      citibike_01_ingest_clean.py     Airflow DAG: raw ingest + Spark clean + MySQL load
+      citibike_02_realtime_kafka.py   Airflow DAG: GBFS -> Kafka -> MySQL realtime
+      citibike_03_mapreduce.py        Airflow DAG: 8 Hadoop Streaming jobs
+      citibike_04_export_reports.py   Airflow DAG: Sqoop export report tables
+      citibike_airflow_lib.py         Shared helper cho Airflow DAGs
+      health_check_dag.py             Airflow smoke-test DAG
   data/
     raw/
       trips/                      Citi Bike trip CSV zip va file da extract
       gbfs/                       GBFS station_information/status JSON
   docker/
+    airflow/                      Airflow image co Docker CLI
     drill/                        Drill config override
     hadoop-python/                Hadoop image co Python de chay mapper/reducer
     realtime/                     Dockerfile cho Kafka producer/consumer
@@ -90,6 +98,7 @@ citibike_tool_stack/
   docker-compose.yml
   README.md
   CITIBIKE_PIPELINE_GUIDE.md
+  AIRFLOW_GUIDE.md
   README_MAPREDUCE.md
   TESTING.md
 ```
@@ -136,6 +145,20 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-all-jobs.ps1 -
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\export_all_to_mysql.ps1 -JobId "ALL"
 ```
 
+Hoac chay bang Airflow orchestration:
+
+```powershell
+docker compose up -d --build airflow-init airflow-webserver airflow-scheduler
+docker exec citibike-airflow-scheduler airflow dags trigger citibike_01_ingest_clean
+```
+
+Airflow chia pipeline thanh 4 DAG trigger lan luot:
+
+- `citibike_01_ingest_clean`
+- `citibike_02_realtime_kafka`
+- `citibike_03_mapreduce`
+- `citibike_04_export_reports`
+
 Mo GUI:
 
 ```text
@@ -143,6 +166,7 @@ http://127.0.0.1:8501
 ```
 
 Huong dan chi tiet nam trong `CITIBIKE_PIPELINE_GUIDE.md`.
+Huong dan rieng cho Airflow nam trong `AIRFLOW_GUIDE.md`.
 
 ## 5. Build dependency va file Hadoop zip
 
