@@ -1,7 +1,7 @@
 ﻿# Citi Bike Pipeline Log
 
-Run ID: 20260605_142839
-Run time: 2026-06-05 14:38:12
+Run ID: 20260610_095250
+Run time: 2026-06-10 09:56:20
 
 ## Sources
 
@@ -13,7 +13,7 @@ Run time: 2026-06-05 14:38:12
 
 - Raw trip CSV lines including header: 50662
 - Clean trips loaded to MySQL: 50488
-- Clean stations loaded to MySQL: 2410
+- Clean stations loaded to MySQL: 2411
 
 ## Storage
 
@@ -37,38 +37,38 @@ Run time: 2026-06-05 14:38:12
 ## HDFS Listing
 
 ```text
-drwxr-xr-x   - root supergroup          0 2026-06-05 07:33 /data/citibike/exports
-drwxr-xr-x   - root supergroup          0 2026-06-05 07:33 /data/citibike/exports/stations_tsv
--rw-r--r--   3 root supergroup          0 2026-06-05 07:33 /data/citibike/exports/stations_tsv/_SUCCESS
--rw-r--r--   3 root supergroup     288792 2026-06-05 07:33 /data/citibike/exports/stations_tsv/part-00000-fc5df896-3283-482c-9f63-5823fbbdbfed-c000.csv
-drwxr-xr-x   - root supergroup          0 2026-06-05 07:33 /data/citibike/exports/trips_tsv
--rw-r--r--   3 root supergroup          0 2026-06-05 07:33 /data/citibike/exports/trips_tsv/_SUCCESS
--rw-r--r--   3 root supergroup    9812191 2026-06-05 07:33 /data/citibike/exports/trips_tsv/part-00000-b5355c86-b983-482b-8f9c-ecebbb478238-c000.csv
-drwxr-xr-x   - root supergroup          0 2026-06-05 07:33 /data/citibike/processed
-drwxr-xr-x   - root supergroup          0 2026-06-05 07:33 /data/citibike/processed/stations_clean_parquet
--rw-r--r--   3 root supergroup          0 2026-06-05 07:33 /data/citibike/processed/stations_clean_parquet/_SUCCESS
--rw-r--r--   3 root supergroup     153294 2026-06-05 07:33 /data/citibike/processed/stations_clean_parquet/part-00000-28cf5139-9e62-4be2-a588-5ec0e6e8c39b-c000.snappy.parquet
-drwxr-xr-x   - root supergroup          0 2026-06-05 07:33 /data/citibike/processed/trips_clean_parquet
--rw-r--r--   3 root supergroup          0 2026-06-05 07:33 /data/citibike/processed/trips_clean_parquet/_SUCCESS
--rw-r--r--   3 root supergroup    1371760 2026-06-05 07:33 /data/citibike/processed/trips_clean_parquet/part-00000-e545f1c3-8372-4901-8dc5-2c97f5c342f4-c000.snappy.parquet
--rw-r--r--   3 root supergroup    1381352 2026-06-05 07:33 /data/citibike/processed/trips_clean_parquet/part-00001-e545f1c3-8372-4901-8dc5-2c97f5c342f4-c000.snappy.parquet
-drwxr-xr-x   - root supergroup          0 2026-06-05 07:30 /data/citibike/raw
-drwxr-xr-x   - root supergroup          0 2026-06-05 07:31 /data/citibike/raw/gbfs
--rw-r--r--   1 root supergroup     715069 2026-06-05 07:31 /data/citibike/raw/gbfs/station_information.json
--rw-r--r--   1 root supergroup    1033641 2026-06-05 07:31 /data/citibike/raw/gbfs/station_status.json
-drwxr-xr-x   - root supergroup          0 2026-06-05 07:31 /data/citibike/raw/trips
--rw-r--r--   1 root supergroup   10547438 2026-06-05 07:31 /data/citibike/raw/trips/citibike_tripdata.csv
+drwxr-xr-x   - root supergroup          0 2026-06-10 02:54 /data/citibike/exports
+drwxr-xr-x   - root supergroup          0 2026-06-10 02:54 /data/citibike/exports/stations_tsv
+-rw-r--r--   3 root supergroup          0 2026-06-10 02:54 /data/citibike/exports/stations_tsv/_SUCCESS
+-rw-r--r--   3 root supergroup     288872 2026-06-10 02:54 /data/citibike/exports/stations_tsv/part-00000-52313d8b-1040-4799-9b2d-175c580ce5f0-c000.csv
+drwxr-xr-x   - root supergroup          0 2026-06-10 02:54 /data/citibike/exports/trips_tsv
+-rw-r--r--   3 root supergroup          0 2026-06-10 02:54 /data/citibike/exports/trips_tsv/_SUCCESS
+-rw-r--r--   3 root supergroup    9812191 2026-06-10 02:54 /data/citibike/exports/trips_tsv/part-00000-86a4b705-d19f-44d4-ac8c-8007d5879917-c000.csv
+drwxr-xr-x   - root supergroup          0 2026-06-10 02:54 /data/citibike/processed
+drwxr-xr-x   - root supergroup          0 2026-06-10 02:54 /data/citibike/processed/stations_clean_parquet
+-rw-r--r--   3 root supergroup          0 2026-06-10 02:54 /data/citibike/processed/stations_clean_parquet/_SUCCESS
+-rw-r--r--   3 root supergroup     153400 2026-06-10 02:54 /data/citibike/processed/stations_clean_parquet/part-00000-1571c22f-e3ba-41b7-889a-ec0a2d2c2ff3-c000.snappy.parquet
+drwxr-xr-x   - root supergroup          0 2026-06-10 02:54 /data/citibike/processed/trips_clean_parquet
+-rw-r--r--   3 root supergroup          0 2026-06-10 02:54 /data/citibike/processed/trips_clean_parquet/_SUCCESS
+-rw-r--r--   3 root supergroup    1371760 2026-06-10 02:54 /data/citibike/processed/trips_clean_parquet/part-00000-c3c3ff7b-1b06-4145-a443-8394f300d9ec-c000.snappy.parquet
+-rw-r--r--   3 root supergroup    1381352 2026-06-10 02:54 /data/citibike/processed/trips_clean_parquet/part-00001-c3c3ff7b-1b06-4145-a443-8394f300d9ec-c000.snappy.parquet
+drwxr-xr-x   - root supergroup          0 2026-06-10 02:53 /data/citibike/raw
+drwxr-xr-x   - root supergroup          0 2026-06-10 02:53 /data/citibike/raw/gbfs
+-rw-r--r--   1 root supergroup     715391 2026-06-10 02:53 /data/citibike/raw/gbfs/station_information.json
+-rw-r--r--   1 root supergroup    1034150 2026-06-10 02:53 /data/citibike/raw/gbfs/station_status.json
+drwxr-xr-x   - root supergroup          0 2026-06-10 02:53 /data/citibike/raw/trips
+-rw-r--r--   1 root supergroup   10547438 2026-06-10 02:53 /data/citibike/raw/trips/citibike_tripdata.csv
 
 ```
 
 ## MinIO Listing
 
 ```text
-[2026-06-05 07:32:13 UTC] 698KiB STANDARD gbfs/station_information.json
-[2026-06-05 07:32:13 UTC]1009KiB STANDARD gbfs/station_status.json
-[2026-06-05 07:32:13 UTC] 1.8MiB STANDARD trips/JC-202401-citibike-tripdata.csv.zip
-[2026-06-05 07:32:14 UTC]  10MiB STANDARD trips/extracted/JC-202401-citibike-tripdata.csv
-[2026-06-05 07:32:13 UTC]   562B STANDARD trips/extracted/__MACOSX/._JC-202401-citibike-tripdata.csv
+[2026-06-10 02:54:00 UTC] 699KiB STANDARD gbfs/station_information.json
+[2026-06-10 02:54:00 UTC]1010KiB STANDARD gbfs/station_status.json
+[2026-06-10 02:54:00 UTC] 1.8MiB STANDARD trips/JC-202401-citibike-tripdata.csv.zip
+[2026-06-10 02:54:01 UTC]  10MiB STANDARD trips/extracted/JC-202401-citibike-tripdata.csv
+[2026-06-10 02:54:00 UTC]   562B STANDARD trips/extracted/__MACOSX/._JC-202401-citibike-tripdata.csv
 
 ```
 
@@ -86,4 +86,4 @@ ride_id	started_at	ended_at	duration_minutes	start_station_name	end_station_name
 
 ## Full Command Transcript
 
-See: `D:\Bigdata\citibike_tool_stack\logs\citibike_pipeline_20260605_142839.log`
+See: `D:\Bigdata\citibike_tool_stack\logs\citibike_pipeline_20260610_095250.log`

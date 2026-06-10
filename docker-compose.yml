@@ -485,3 +485,22 @@ services:
     entrypoint: ["/bin/sh", "-lc"]
     networks:
       - bigdata_net
+
+  gui-app:
+    build:
+      context: ./gui_app
+    container_name: citibike-gui-app
+    hostname: gui-app
+    environment:
+      MYSQL_HOST: mysql
+      MYSQL_PORT: 3306
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+    ports:
+      - "8501:8501"
+    depends_on:
+      mysql:
+        condition: service_healthy
+    networks:
+      - bigdata_net
