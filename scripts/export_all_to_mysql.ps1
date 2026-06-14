@@ -3,10 +3,33 @@ param(
     [string]$JobId
 )
 
+$ErrorActionPreference = "Continue"
+
+# 1. Xác định cấu trúc đường dẫn hệ thống
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $LogDir = Join-Path $ProjectRoot "logs"
 if (!(Test-Path $LogDir)) { New-Item -ItemType Directory -Path $LogDir | Out-Null }
 $LogFileMD = Join-Path $LogDir "citibike_sqoop_export_latest.md"
+
+$ReportTablesSql = Join-Path $ProjectRoot "mysql\init\03-mapreduce-report-tables.sql"
+
+# =========================================================================
+# TỰ ĐỘNG ĐỌC FILE SQL ĐỂ KHỞI TẠO BẢNG TRƯỚC
+# =========================================================================
+Write-Host "Dang kiem tra va thuc thi file SQL khoi tao bang..." -ForegroundColor Cyan
+
+if (Test-Path $ReportTablesSql) {
+    # Đọc nội dung file SQL từ Windows và đẩy trực tiếp vào container MySQL để chạy
+    Get-Content $ReportTablesSql -Raw | docker exec -i citibike-mysql mysql -utestuser -ptestpass -D testdb
+    
+    if ($LASTEXITCODE -ne 0) {
+        throw "Loi thuc thi file SQL khoi tao bang rpt_! Vui long kiem tra lai."
+    }
+    Write-Host "Khoi tao cấu trúc các bang tu file 03 thành công!" -ForegroundColor Green
+} else {
+    Write-Warning "Khong tim thay file SQL tai duong dan: $ReportTablesSql. Script se tiep tuc neu cac bang da co san."
+}
+# =========================================================================
 
 # --- SU DUNG ARRAY (MANG) DE GIU THU TU ---
 $jobs = @(
@@ -27,15 +50,24 @@ function Invoke-ExportJob($job) {
     
     Write-Host "Dang xu ly: $id -> $table" -ForegroundColor Yellow
     
-    # 1. Lam sach bang
+    # 1. Lam sach bang (Chắc chắn đã chạy thành công vì bảng đã được tạo ở trên)
     docker exec -i citibike-mysql mysql -utestuser -ptestpass -D testdb -e "TRUNCATE TABLE $table;" | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Khong truncate duoc bang $table"
+    }
     
     # 2. Export
     $sqoopCmd = "/opt/sqoop/bin/sqoop export --connect 'jdbc:mysql://mysql:3306/testdb?useSSL=false' --username testuser --password testpass --table $table --export-dir /data/citibike/mapreduce/$id --input-fields-terminated-by '\t' --input-lines-terminated-by '\n' --input-null-string '\\N' --input-null-non-string '\\N' -m 1"
     docker exec -i citibike-sqoop bash -c "$sqoopCmd" | Out-Null
+    if ($LASTEXITCODE -ne 0) {
+        throw "Sqoop export that bai cho $id -> $table"
+    }
     
     # 3. Kiem tra va ghi log
     $count = docker exec -i citibike-mysql mysql -utestuser -ptestpass -D testdb -N -e "SELECT COUNT(*) FROM $table;"
+    if ($LASTEXITCODE -ne 0 -or $null -eq $count) {
+        throw "Khong doc duoc row count cua $table"
+    }
     "Table: $table | Records: $($count.Trim())" | Out-File -FilePath $LogFileMD -Append -Encoding utf8
     Write-Host "Xong $table. Tong so dong: $($count.Trim())" -ForegroundColor Green
 }
@@ -47,7 +79,7 @@ if ($JobId -eq "ALL") {
         Invoke-ExportJob -job $job
     }
 } else {
-    # Tim job theo id
+    # Tìm job theo id
     $foundJob = $jobs | Where-Object { $_.id -eq $JobId }
     if ($foundJob) {
         Invoke-ExportJob -job $foundJob

@@ -36,6 +36,13 @@ function Invoke-Compose {
 
 try {
   Write-Step "Starting Citi Bike end-to-end pipeline"
+  Write-Step "Preparing local build dependencies"
+  $depsSearchRoot = (Resolve-Path (Join-Path $ProjectRoot "..")).Path
+  & (Join-Path $ProjectRoot "scripts\prepare-build-deps.ps1") -SearchRoot $depsSearchRoot
+  if ($LASTEXITCODE -ne 0) {
+    throw "prepare-build-deps.ps1 failed with exit code $LASTEXITCODE"
+  }
+
   Write-Step "Ensuring Docker Compose stack is running"
   Invoke-Compose @("up", "-d", "--build")
 

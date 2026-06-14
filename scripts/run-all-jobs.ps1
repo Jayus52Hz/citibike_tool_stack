@@ -2,6 +2,8 @@ param(
     [string]$JobId = "ALL" 
 )
 
+$ErrorActionPreference = "Continue"
+
 # 1. Xac dinh cau truc duong dan he thong
 $ProjectRoot = (Resolve-Path (Join-Path $PSScriptRoot "..")).Path
 $MapReduceRoot = Join-Path $ProjectRoot "mapreduce"
@@ -41,6 +43,8 @@ if (!(Test-Path $LogFileMD)) {
 }
 
 Write-Host "KICH HOAT HE THONG MAPREDUCE (Mode: $JobId)..." -ForegroundColor Cyan
+docker exec -i citibike-namenode hadoop dfsadmin -safemode leave | Out-Null
+$failedJobs = @()
 
 foreach ($job in $jobList) {
     $job_name = $job.name
@@ -57,8 +61,11 @@ foreach ($job in $jobList) {
     $reducer_file = Join-Path $local_job_dir "reducer.py"
     
     docker cp $mapper_file "citibike-namenode:/tmp/mapper.py"
+    if ($LASTEXITCODE -ne 0) { throw "Khong copy duoc mapper cho $job_name" }
     docker cp $reducer_file "citibike-namenode:/tmp/reducer.py"
+    if ($LASTEXITCODE -ne 0) { throw "Khong copy duoc reducer cho $job_name" }
     docker exec -i citibike-namenode bash -c "sed -i 's/\r$//' /tmp/mapper.py && sed -i 's/\r$//' /tmp/reducer.py"
+    if ($LASTEXITCODE -ne 0) { throw "Khong normalize duoc mapper/reducer cho $job_name" }
     
     $job_start = Get-Date
     
@@ -68,18 +75,21 @@ foreach ($job in $jobList) {
         -mapper "python3 mapper.py" `
         -reducer "python3 reducer.py" `
         -input $input_path `
-        -output $hdfs_output 2>&1 | Tee-Object -Variable hadoop_log | Out-Null
+        -output $hdfs_output 2>&1 | Tee-Object -Variable hadoop_log
+    $hadoopExitCode = $LASTEXITCODE
         
     $job_end = Get-Date
     $duration_sec = [math]::Round(($job_end - $job_start).TotalSeconds, 2)
     
     # Kiem tra ket qua
     $check_hdfs = docker exec -i citibike-namenode hadoop fs -ls $hdfs_output 2>&1
-    $status = if ($check_hdfs -match "part-") { "SUCCESS" } else { "FAILED" }
+    $status = if ($hadoopExitCode -eq 0 -and $check_hdfs -match "part-") { "SUCCESS" } else { "FAILED" }
     
     $lines_counts = 0
     if ($status -eq "SUCCESS") {
         $lines_counts = docker exec -i citibike-namenode bash -c "hadoop fs -cat $hdfs_output/part-00000 2>/dev/null | wc -l"
+    } else {
+        $failedJobs += $job_name
     }
     
     # Kiem tra mau chu 
@@ -93,11 +103,25 @@ foreach ($job in $jobList) {
     Write-Host "Ket thuc ${job_name}: $status" -ForegroundColor $msgColor
 
     # Ghi log
-    @"
+    $logEntry = @"
 
 ### Job: $job_name
 - **Status**: $status
 - **Duration**: $duration_sec seconds
 - **Records Output**: $lines_counts
-"@ | Out-File -FilePath $LogFileMD -Encoding utf8 -Append
+"@
+    if ($status -ne "SUCCESS") {
+        $logEntry += @"
+- **Hadoop Log Tail**:
+````text
+$($hadoop_log | Select-Object -Last 80 | Out-String)
+````
+"@
+    }
+    $logEntry | Out-File -FilePath $LogFileMD -Encoding utf8 -Append
+}
+
+if ($failedJobs.Count -gt 0) {
+    Write-Error "MapReduce failed jobs: $($failedJobs -join ', ')"
+    exit 1
 }

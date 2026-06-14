@@ -17,7 +17,11 @@ volumes:
 
 services:
   namenode:
-    image: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    build:
+      context: ./docker/hadoop-python
+      args:
+        BASE_IMAGE: bde2020/hadoop-namenode:2.0.0-hadoop3.2.1-java8
+    image: citibike-hadoop-namenode-python:latest
     container_name: citibike-namenode
     hostname: namenode
     environment:
@@ -73,7 +77,11 @@ services:
       - bigdata_net
 
   nodemanager:
-    image: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+    build:
+      context: ./docker/hadoop-python
+      args:
+        BASE_IMAGE: bde2020/hadoop-nodemanager:2.0.0-hadoop3.2.1-java8
+    image: citibike-hadoop-nodemanager-python:latest
     container_name: citibike-nodemanager
     hostname: nodemanager
     environment:
@@ -314,7 +322,9 @@ services:
       - bigdata_net
 
   airflow-init:
-    image: apache/airflow:2.9.3
+    build:
+      context: ./docker/airflow
+    image: citibike-airflow-docker:latest
     container_name: citibike-airflow-init
     hostname: airflow-init
     user: "${AIRFLOW_UID}:0"
@@ -324,9 +334,18 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
       AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
+      CITIBIKE_PROJECT_ROOT: /opt/citibike_tool_stack
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     volumes:
       - ./airflow/dags:/opt/airflow/dags:ro
       - airflow_logs:/opt/airflow/logs
+      - .:/opt/citibike_tool_stack
+      - /var/run/docker.sock:/var/run/docker.sock
     command:
       - bash
       - -lc
@@ -347,7 +366,7 @@ services:
       - bigdata_net
 
   airflow-webserver:
-    image: apache/airflow:2.9.3
+    image: citibike-airflow-docker:latest
     container_name: citibike-airflow-webserver
     hostname: airflow-webserver
     user: "${AIRFLOW_UID}:0"
@@ -357,12 +376,21 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
       AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
+      CITIBIKE_PROJECT_ROOT: /opt/citibike_tool_stack
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     command: webserver
     ports:
       - "8082:8080"
     volumes:
       - ./airflow/dags:/opt/airflow/dags:ro
       - airflow_logs:/opt/airflow/logs
+      - .:/opt/citibike_tool_stack
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       airflow-init:
         condition: service_completed_successfully
@@ -370,7 +398,7 @@ services:
       - bigdata_net
 
   airflow-scheduler:
-    image: apache/airflow:2.9.3
+    image: citibike-airflow-docker:latest
     container_name: citibike-airflow-scheduler
     hostname: airflow-scheduler
     user: "${AIRFLOW_UID}:0"
@@ -380,10 +408,19 @@ services:
       AIRFLOW__CORE__LOAD_EXAMPLES: "false"
       AIRFLOW__CORE__DAGS_ARE_PAUSED_AT_CREATION: "false"
       AIRFLOW__WEBSERVER__SECRET_KEY: ${AIRFLOW_SECRET_KEY}
+      CITIBIKE_PROJECT_ROOT: /opt/citibike_tool_stack
+      MYSQL_DATABASE: ${MYSQL_DATABASE}
+      MYSQL_USER: ${MYSQL_USER}
+      MYSQL_PASSWORD: ${MYSQL_PASSWORD}
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD}
     command: scheduler
     volumes:
       - ./airflow/dags:/opt/airflow/dags:ro
       - airflow_logs:/opt/airflow/logs
+      - .:/opt/citibike_tool_stack
+      - /var/run/docker.sock:/var/run/docker.sock
     depends_on:
       airflow-init:
         condition: service_completed_successfully

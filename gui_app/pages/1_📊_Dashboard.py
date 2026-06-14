@@ -55,7 +55,7 @@ html, body, [class*="css"] { font-family: 'DM Sans', sans-serif; }
 st.markdown("""
 <div class="dash-header">
   <h1>📊 MapReduce Analysis Dashboard</h1>
-  <p>8 Hadoop MapReduce jobs • Citi Bike NYC — chọn chế độ hiển thị bên dưới</p>
+  <p>8 Hadoop MapReduce jobs • Citi Bike NYC — Truy vấn trực tiếp hệ thống bảng rpt từ MySQL</p>
 </div>
 """, unsafe_allow_html=True)
 
@@ -237,7 +237,7 @@ with col4:
 st.divider()
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# MR5 + MR6
+# MR5 + MR6 (ĐÃ SỬA MR6: Đọc trực tiếp từ bảng rpt_mr6_anomaly_detection)
 # ═══════════════════════════════════════════════════════════════════════════════
 col5, col6 = st.columns(2)
 
@@ -260,58 +260,29 @@ with col5:
         no_data("MR5")
 
 with col6:
-    job_header(6, "Phân bố thời lượng chuyến đi",
-               "Nhóm duration_minutes để nhìn nhanh hành vi sử dụng")
-    df = safe_query("""
-        SELECT duration_bucket, COUNT(*) AS trip_count
-        FROM (
-            SELECT
-                CASE
-                    WHEN duration_minutes < 5 THEN '< 5 phút'
-                    WHEN duration_minutes < 10 THEN '5-10 phút'
-                    WHEN duration_minutes < 20 THEN '10-20 phút'
-                    WHEN duration_minutes < 30 THEN '20-30 phút'
-                    WHEN duration_minutes < 60 THEN '30-60 phút'
-                    ELSE '>= 60 phút'
-                END AS duration_bucket,
-                CASE
-                    WHEN duration_minutes < 5 THEN 1
-                    WHEN duration_minutes < 10 THEN 2
-                    WHEN duration_minutes < 20 THEN 3
-                    WHEN duration_minutes < 30 THEN 4
-                    WHEN duration_minutes < 60 THEN 5
-                    ELSE 6
-                END AS bucket_order
-            FROM citibike_trips_clean
-            WHERE duration_minutes IS NOT NULL
-        ) x
-        GROUP BY duration_bucket, bucket_order
-        ORDER BY bucket_order
-    """)
+    # ĐÃ ĐỒNG BỘ: Gọi trực tiếp bảng rpt_mr6 do Sqoop export về MySQL
+    job_header(6, "Phát hiện dữ liệu bất thường (Anomaly)",
+               "Thống kê các trường hợp bản ghi lỗi được bóc tách từ MapReduce Job 6")
+    df = safe_query("SELECT * FROM rpt_mr6_anomaly_detection ORDER BY error_count DESC")
     if df is not None:
         if not is_chart:
             show_table(df, key="mr6")
         else:
             fig = px.bar(
                 df,
-                x="duration_bucket",
-                y="trip_count",
-                color="trip_count",
-                color_continuous_scale=["#38bdf8", "#f472b6"],
-                text="trip_count",
-                labels={"duration_bucket": "", "trip_count": "Số chuyến"},
+                x="error_type",
+                y="error_count",
+                color="error_count",
+                color_continuous_scale="Reds",
+                text="error_count",
+                labels={"error_type": "Loại lỗi dữ liệu", "error_count": "Số trường hợp"},
             )
             fig.update_layout(
                 coloraxis_showscale=False,
-                margin=dict(t=20, b=40, l=10, r=20),
-                xaxis_title="Nhóm thời lượng",
-                yaxis_title="Số chuyến",
+                xaxis_title="Loại lỗi hệ thống",
+                yaxis_title="Số lượng bản ghi",
             )
-            fig.update_traces(
-                textposition="outside",
-                cliponaxis=False,
-                hovertemplate="<b>%{x}</b><br>Số chuyến: %{y}<extra></extra>",
-            )
+            fig.update_traces(textposition="outside")
             st.plotly_chart(chart_layout(fig, 360), use_container_width=True)
     else:
         no_data("MR6")
@@ -379,4 +350,4 @@ with col8:
         no_data("MR8")
 
 st.divider()
-st.caption("🔄 Dữ liệu từ MySQL • Cập nhật sau mỗi lần chạy MapReduce + Sqoop Export")
+st.caption("🔄 Dữ liệu kết xuất từ MySQL • Phản ánh chính xác kết quả xử lý phân tán từ Hadoop MapReduce + Apache Sqoop Export")
