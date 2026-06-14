@@ -136,6 +136,39 @@ Chay smoke test:
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-all-tests.ps1
 ```
 
+Neu test fail do service chua san sang, kiem tra `docker compose ps`, doi them vai chuc giay va chay lai script do.
+
+Ket qua ky vong:
+
+- HDFS tao `/data/test/test.csv` va `hdfs dfs -cat` in `id,name,value` va `1,test,100`.
+- Spark doc `hdfs://namenode:9000/data/test/test.csv`, ghi `/data/test/spark-output`, va in `spark_rows= 1`.
+- MySQL select duoc bang `test_data`.
+- Sqoop import `test_data` sang HDFS va export lai vao `sqoop_export_test`.
+- Drill REST query tra ve row tu `/sample-data/test.csv`.
+- Kafka consume duoc message `hello-bigdata`.
+- Realtime Kafka pipeline tao topic `citibike.station_status`, day station status tu GBFS vao Kafka, va consumer ghi vao MySQL bang `citibike_station_status_stream`.
+- Airflow DAG `tool_stack_health_check` chay success bang `airflow dags test`.
+- Superset health endpoint tra HTTP 200 va ket noi duoc MySQL `testdb`.
+- MinIO bucket `test-bucket` co file `test.csv`.
+
+## Service Hostnames
+
+Tat ca service cung nam tren network Docker `bigdata_net`. Khi ket noi tu container khac, dung hostname service:
+
+- HDFS: `hdfs://namenode:9000`
+- YARN ResourceManager: `resourcemanager:8088`
+- Spark master: `spark://spark-master:7077`
+- MySQL: `mysql:3306`
+- Drill: `drill:8047`
+- ZooKeeper: `zookeeper:2181`
+- Kafka: `kafka:9092`
+- Airflow metadata DB: `airflow-postgres:5432`
+- Superset: `superset:8088`
+- MinIO: `http://minio:9000`
+- Streamlit: `http://localhost:8501`
+
+## Citi Bike Batch and Realtime Pipeline
+
 Chay pipeline chinh:
 
 ```powershell
@@ -183,7 +216,6 @@ Script sau se xu ly tu dong:
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\prepare-build-deps.ps1
 ```
-
 Neu may da co file trong workspace cha, script se copy vao `docker/sqoop/deps/`. Neu khong co, script se tai tu Apache Archive/Maven Central. Vi vay khi build moi nen chay script nay truoc `docker compose up -d --build`.
 
 ## 6. URL dich vu

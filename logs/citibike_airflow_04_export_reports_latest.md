@@ -1,6 +1,6 @@
 # Airflow Citi Bike Export Report
 
-Run time: 2026-06-10T15:06:24
+Run time: 2026-06-14T14:45:43
 
 - rpt_mr1_user_behavior: 4 rows
 - rpt_mr2_top_routes: 4185 rows
