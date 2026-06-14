@@ -42,6 +42,8 @@ def build_backup_zip(table_names):
     with zipfile.ZipFile(buffer, mode="w", compression=zipfile.ZIP_DEFLATED) as zf:
         for table in table_names:
             df = run_query(f"SELECT * FROM `{table}`")
+            if df.empty:
+                df = pd.DataFrame(columns=table_columns(table))
             csv_bytes = df.to_csv(index=False).encode("utf-8")
             zf.writestr(f"tables/{table}.csv", csv_bytes)
             manifest["tables"][table] = {
@@ -75,6 +77,18 @@ def restore_table(table_name: str, df: pd.DataFrame, replace_existing: bool):
         f"ON DUPLICATE KEY UPDATE {update_sql}"
     )
     return run_many(sql, rows)
+
+
+def read_backup_table(zf, table_name: str, manifest: dict) -> pd.DataFrame:
+    backup_meta = manifest.get("tables", {}).get(table_name, {})
+    manifest_cols = backup_meta.get("columns", [])
+    csv_path = f"tables/{table_name}.csv"
+
+    try:
+        with zf.open(csv_path) as f:
+            return pd.read_csv(f)
+    except pd.errors.EmptyDataError:
+        return pd.DataFrame(columns=manifest_cols)
 
 
 try:
@@ -131,8 +145,7 @@ with tab_restore:
                         if table not in tables:
                             st.warning(f"Bo qua {table}: bang chua ton tai trong database.")
                             continue
-                        with zf.open(f"tables/{table}.csv") as f:
-                            df = pd.read_csv(f)
+                        df = read_backup_table(zf, table, manifest)
                         restored[table] = restore_table(table, df, replace_existing)
                     st.success("Phuc hoi hoan tat.")
                     st.dataframe(
