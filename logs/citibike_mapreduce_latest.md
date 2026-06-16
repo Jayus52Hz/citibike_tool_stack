@@ -1,4 +1,4 @@
-## Citi Bike MapReduce Execution Log
+﻿## Citi Bike MapReduce Execution Log
 
 ### Job: mr1_user_behavior
 - **Status**: SUCCESS
@@ -835,7 +835,7 @@ Streaming Command Failed!
 - **Records Output**: 0- **Hadoop Log Tail**:
 ``text
 docker : 2026-06-10 13:50:35,568 INFO impl.MetricsConfig: Loaded properties from hadoop-metrics2.properties
-At D:\Bigdata\New game\citibike_tool_stack\scripts\run-all-jobs.ps1:72 char:5
+At D:\Bigdata\New game\projects\citibike_tool_stack\scripts\run-all-jobs.ps1:72 char:5
 +     docker exec -i citibike-namenode hadoop jar $STREAMING_JAR `
 +     ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
     + CategoryInfo          : NotSpecified: (2026-06-10 13:5...ics2.properties:String) [], RemoteException
@@ -889,3 +889,44 @@ Streaming Command Failed!
 - **Status**: SUCCESS
 - **Duration**: 3.57 seconds
 - **Records Output**: 4
+
+### Job: mr1_user_behavior
+- **Status**: SUCCESS
+- **Duration**: 5.34 seconds
+- **Records Output**: 4
+
+### Job: mr2_top_routes
+- **Status**: SUCCESS
+- **Duration**: 4.84 seconds
+- **Records Output**: 4185
+
+### Job: mr3_hourly_trends
+- **Status**: SUCCESS
+- **Duration**: 4.69 seconds
+- **Records Output**: 24
+
+### Job: mr4_weekly_analysis
+- **Status**: SUCCESS
+- **Duration**: 4.8 seconds
+- **Records Output**: 14
+
+### Job: mr5_distance_calc
+- **Status**: SUCCESS
+- **Duration**: 4.6 seconds
+- **Records Output**: 4185
+
+### Job: mr6_anomaly_detection
+- **Status**: SUCCESS
+- **Duration**: 3.84 seconds
+- **Records Output**: 0
+
+### Job: mr7_station_capacity
+- **Status**: SUCCESS
+- **Duration**: 3.92 seconds
+- **Records Output**: 3
+
+### Job: mr8_station_status_check
+- **Status**: SUCCESS
+- **Duration**: 3.65 seconds
+- **Records Output**: 2
+

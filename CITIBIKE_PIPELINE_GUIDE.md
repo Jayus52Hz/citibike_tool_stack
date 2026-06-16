@@ -1,4 +1,4 @@
-# Citi Bike Pipeline Runbook
+﻿# Citi Bike Pipeline Runbook
 
 Tai lieu nay la checklist chuan de chay lai pipeline tu dau tren Windows PowerShell.
 
@@ -7,7 +7,7 @@ Tai lieu nay la checklist chuan de chay lai pipeline tu dau tren Windows PowerSh
 Mo Docker Desktop truoc, sau do vao thu muc project:
 
 ```powershell
-cd "D:\Bigdata\New game\citibike_tool_stack"
+cd "D:\Bigdata\New game\projects\citibike_tool_stack"
 ```
 
 Neu clone moi chua co `.env`:
@@ -370,3 +370,4 @@ docker compose down -v
 ```
 
 Sau khi `down -v`, can chay lai batch pipeline, realtime, MapReduce va export de co lai du lieu.
+

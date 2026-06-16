@@ -86,4 +86,5 @@ ride_id	started_at	ended_at	duration_minutes	start_station_name	end_station_name
 
 ## Full Command Transcript
 
-See: `D:\Bigdata\New game\citibike_tool_stack\logs\citibike_pipeline_20260610_203743.log`
+See: `D:\Bigdata\New game\projects\citibike_tool_stack\logs\citibike_pipeline_20260610_203743.log`
+

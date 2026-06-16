@@ -1,6 +1,6 @@
-# Testing
+﻿# Testing
 
-Chay cac lenh duoi day tai `D:\Bigdata\New game\citibike_tool_stack` sau khi `Copy-Item .env.example .env` va `docker compose up -d --build` hoan tat.
+Chay cac lenh duoi day tai `D:\Bigdata\New game\projects\citibike_tool_stack` sau khi `Copy-Item .env.example .env` va `docker compose up -d --build` hoan tat.
 Nen doi 1-3 phut de cac service init xong truoc khi chay toan bo test.
 
 ## Quick Status
@@ -93,3 +93,4 @@ Neu PowerShell chan script theo ExecutionPolicy:
 ```powershell
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-all-tests.ps1
 ```
+

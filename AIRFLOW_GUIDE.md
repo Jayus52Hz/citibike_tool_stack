@@ -1,4 +1,4 @@
-# Airflow Pipeline Guide
+﻿# Airflow Pipeline Guide
 
 Tai lieu nay mo ta phan Airflow orchestration cua du an. Airflow khong chi la health check nua; hien co 4 DAG tach rieng va trigger noi tiep.
 
@@ -31,7 +31,7 @@ Airflow image duoc build tu `docker/airflow/Dockerfile`. Image nay them Docker C
 ## 3. Start Airflow
 
 ```powershell
-cd "D:\Bigdata\New game\citibike_tool_stack"
+cd "D:\Bigdata\New game\projects\citibike_tool_stack"
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\prepare-build-deps.ps1
 docker compose up -d --build airflow-init airflow-webserver airflow-scheduler
 ```
@@ -137,3 +137,4 @@ Neu DAG 4 fail do Sqoop, xem log task `export_mr*_...` va kiem tra HDFS output:
 ```powershell
 docker exec citibike-namenode /opt/hadoop-3.2.1/bin/hdfs dfs -ls /data/citibike/mapreduce
 ```
+

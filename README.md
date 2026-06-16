@@ -1,4 +1,4 @@
-# Citi Bike Big Data Pipeline
+﻿# Citi Bike Big Data Pipeline
 
 Du an dung Docker Compose de chay mot pipeline Big Data end-to-end tren du lieu Citi Bike:
 
@@ -111,7 +111,7 @@ citibike_tool_stack/
 - Thu muc lam viec:
 
 ```powershell
-cd "D:\Bigdata\New game\citibike_tool_stack"
+cd "D:\Bigdata\New game\projects\citibike_tool_stack"
 ```
 
 ## 4. Chay nhanh
@@ -269,3 +269,4 @@ Xoa ca volume du lieu:
 ```powershell
 docker compose down -v
 ```
+

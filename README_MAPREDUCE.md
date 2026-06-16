@@ -1,4 +1,4 @@
-# MapReduce va GUI Guide
+﻿# MapReduce va GUI Guide
 
 File nay tap trung vao phan MapReduce, export report ve MySQL va GUI quan ly/visualization. De chay toan bo pipeline tu dau, doc `CITIBIKE_PIPELINE_GUIDE.md`.
 
@@ -7,7 +7,7 @@ File nay tap trung vao phan MapReduce, export report ve MySQL va GUI quan ly/vis
 Can co stack Docker dang chay va du lieu clean trong MySQL/HDFS:
 
 ```powershell
-cd "D:\Bigdata\New game\citibike_tool_stack"
+cd "D:\Bigdata\New game\projects\citibike_tool_stack"
 powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\run-citibike-pipeline.ps1
 ```
 
@@ -129,3 +129,4 @@ powershell -NoProfile -ExecutionPolicy Bypass -File .\scripts\refresh-dashboard-
 - Screenshot `SQL Workbench`.
 - Screenshot `Manage Trips` va `Manage Stations`.
 - Screenshot `Backup / Restore`.
+
